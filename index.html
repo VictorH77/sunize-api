@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loja — EstúdioShop (Checkout Sunize)</title>
+  <meta name="description" content="Loja online simples com integração Sunize (PIX) - exemplo.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#FFD700; /* amarelo principal */
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;
+      background:var(--bg);color:#0f172a;-webkit-font-smoothing:antialiased;
+    }
+    .container{max-width:1100px;margin:0 auto;padding:20px}
+    header{background:var(--card);padding:12px 0;position:sticky;top:0;z-index:40;box-shadow:0 1px 0 rgba(2,6,23,0.04)}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-weight:800;font-size:20px}
+    .brand span{color:var(--accent)}
+    .search{display:flex;align-items:center;background:#f3f4f6;padding:8px 10px;border-radius:999px}
+    .search input{border:0;background:transparent;outline:0;width:220px}
+    .icon-btn{background:transparent;border:0;font-size:18px;padding:8px;cursor:pointer;border-radius:8px}
+
+    .hero{display:flex;gap:28px;align-items:center;margin:22px 0}
+    .hero-left{flex:1}
+    .hero h1{font-size:30px;margin:6px 0}
+    .btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
+    .btn.primary{background:var(--accent);color:#000}
+    .btn.ghost{background:transparent;border:1px solid rgba(2,6,23,0.06)}
+
+    .grid{display:grid;gap:16px;margin-top:12px;grid-template-columns:repeat(1,1fr)}
+    @media(min-width:640px){ .grid{grid-template-columns:repeat(2,1fr)} }
+    @media(min-width:980px){ .grid{grid-template-columns:repeat(3,1fr)} }
+
+    .card{background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(2,6,23,0.06);display:flex;flex-direction:column}
+    .media{height:180px;overflow:hidden}
+    .media img{width:100%;height:100%;object-fit:cover;display:block}
+    .meta{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .meta h3{margin:0;font-size:16px}
+    .price{color:#000;font-weight:800}
+    .meta .actions{display:flex;gap:8px;margin-top:auto}
+    .buy-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:10px;font-weight:700;text-decoration:none;background:transparent;border:1px solid rgba(2,6,23,0.06);color:var(--muted)}
+    .buy-link.cta{background:var(--accent);color:#000;border:none}
+
+    .drawer{position:fixed;right:0;top:0;height:100%;width:420px;background:var(--card);box-shadow:-24px 0 40px rgba(2,6,23,0.12);transform:translateX(100%);transition:transform .28s ease;z-index:80;padding:16px;display:flex;flex-direction:column}
+    .drawer.open{transform:translateX(0)}
+    .cart-item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(2,6,23,0.04)}
+    .cart-item img{width:64px;height:64px;object-fit:cover;border-radius:8px}
+    .qty{display:flex;align-items:center;gap:8px}
+    .qty button{padding:6px 8px;border-radius:8px;border:1px solid rgba(2,6,23,0.06);background:transparent;cursor:pointer}
+
+    footer{margin-top:26px;padding:18px 0;color:var(--muted);font-size:14px;border-top:1px solid rgba(2,6,23,0.04)}
+    .muted{color:var(--muted);font-size:13px}
+    .toast{position:fixed;right:18px;bottom:18px;background:var(--accent);color:#000;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(2,6,23,0.12)}
+
+    /* payment modal */
+    .pay-modal{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;z-index:120}
+    .pay-modal.open{display:flex}
+    .pay-box{background:var(--card);padding:18px;border-radius:12px;max-width:640px;width:96%}
+    .pay-box pre{background:#f3f4f6;padding:8px;border-radius:8px;overflow:auto}
+    .qr{max-width:240px;margin-top:12px}
+
+    /* customer modal */
+    .cust-modal{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:none;align-items:center;justify-content:center;z-index:110}
+    .cust-modal.open{display:flex}
+    .cust-form{background:var(--card);padding:18px;border-radius:12px;max-width:760px;width:96%;max-height:90vh;overflow:auto}
+    .field{display:flex;flex-direction:column;margin-bottom:10px}
+    .field label{font-weight:600;margin-bottom:6px}
+    .field input,.field textarea,.field select{padding:10px;border-radius:8px;border:1px solid rgba(2,6,23,0.08);font-size:14px}
+    .row{display:flex;gap:10px}
+    .row .field{flex:1}
+    .small{font-size:12px;color:var(--muted);margin-top:6px}
+    .error{color:#ef4444;font-size:13px;margin-top:6px}
+    
+    @media(max-width:640px){ .row{flex-direction:column} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-inner" role="banner">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="brand">Estúdio<span>Shop</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="search" role="search" aria-label="buscar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="opacity:.7"><path d="M21 21l-4.35-4.35" stroke="#111827" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <input id="search" placeholder="Pesquisar produtos..." aria-label="Pesquisar produtos">
+        </div>
+        <button class="icon-btn" id="cartBtn" aria-label="Abrir carrinho">🛒</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" role="main">
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-left">
+        <div class="muted">Coleção básica</div>
+        <h1 id="heroTitle">Design simples, venda rápida</h1>
+        <p>Template minimalista para começar a vender — personalizável, leve e responsivo.</p>
+      </div>
+    </section>
+
+    <section aria-label="Produtos">
+      <div class="products-head" style="display:flex;justify-content:space-between;align-items:end">
+        <h2 style="margin:0">Produtos em destaque</h2>
+        <div class="muted" id="showing">Mostrando 0 itens</div>
+      </div>
+
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </section>
+
+    <footer>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+        <div><strong>EstúdioShop</strong><div class="muted">contato@exemplo.com</div></div>
+        <div class="muted">© <span id="year"></span></div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Cart drawer -->
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Seu carrinho</h3>
+      <button onclick="closeDrawer()" class="icon-btn" aria-label="Fechar">✕</button>
+    </div>
+
+    <div id="cartList" style="margin-top:12px;overflow:auto;flex:1;padding-right:6px"></div>
+
+    <div style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><div class="muted">Subtotal</div><div id="subtotal" style="font-weight:800">R$ 0,00</div></div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button id="checkoutBtn" class="btn primary" style="flex:1">Ir para o checkout</button>
+        <button id="clearBtn" class="btn" style="border:1px solid rgba(2,6,23,0.06);background:transparent">Limpar</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Customer modal -->
+  <div id="custModal" class="cust-modal" role="dialog" aria-modal="true">
+    <div class="cust-form" role="document">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3>Informações do comprador</h3>
+        <button id="closeCust" style="border:0;background:transparent;font-size:18px;cursor:pointer">✕</button>
+      </div>
+
+      <form id="custForm">
+        <div class="row">
+          <div class="field"><label for="c_name">Nome completo *</label><input id="c_name" name="name" required></div>
+          <div class="field"><label for="c_email">Email</label><input id="c_email" name="email" type="email"></div>
+        </div>
+
+        <div class="row">
+          <div class="field"><label for="c_phone">Telefone *</label><input id="c_phone" name="phone" placeholder="(11) 99999-9999" required></div>
+          <div class="field"><label for="c_document">CPF / CNPJ</label><input id="c_document" name="document" placeholder="Apenas números"></div>
+        </div>
+
+        <div class="row">
+          <div class="field" style="position:relative">
+            <label for="c_cep">CEP</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="c_cep" name="cep" placeholder="00000-000" maxlength="9">
+              <button type="button" id="lookupCepBtn" class="btn ghost" style="padding:8px 10px">Pesquisar CEP</button>
+            </div>
+            <div class="small">Insira o CEP e pressione buscar (ou saia do campo).</div>
+          </div>
+          <div class="field"><label for="c_city">Cidade</label><input id="c_city" name="city"></div>
+        </div>
+
+        <div class="row">
+          <div class="field"><label for="c_state">Estado</label><input id="c_state" name="state" placeholder="SP"></div>
+          <div class="field"><label for="c_address">Logradouro</label><input id="c_address" name="address"></div>
+        </div>
+
+        <div class="row">
+          <div class="field"><label for="c_number">Número</label><input id="c_number" name="number"></div>
+          <div class="field"><label for="c_complement">Complemento</label><input id="c_complement" name="complement"></div>
+        </div>
+
+        <div class="field"><label for="c_note">Observações (opcional)</label><textarea id="c_note" name="note" rows="2"></textarea></div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+          <button type="button" id="useSaved" class="btn ghost">Usar dados salvos</button>
+          <button type="submit" id="saveAndPay" class="btn primary">Confirmar & Pagar</button>
+        </div>
+
+        <div id="custError" class="error" style="display:none"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Payment modal -->
+  <div id="payModal" class="pay-modal" role="dialog" aria-modal="true">
+    <div class="pay-box">
+      <button id="closePay" style="float:right;border:0;background:transparent;font-size:18px;cursor:pointer">✕</button>
+      <h3>Instruções de pagamento</h3>
+      <div id="payContent"></div>
+      <div id="qrWrap" style="display:flex;gap:12px;align-items:flex-start">
+        <div id="pixPayloadBlock" style="flex:1"></div>
+        <div id="qrBlock" class="qr"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========== CONFIG =============
+ If your backend is on another origin, change FETCH_BASE to full URL (e.g. https://meu-backend.com)
+================================= */
+const FETCH_BASE = ''; // '' means same origin; otherwise 'https://seu-backend.com'
+
+/* ========= PRODUCTS ========= */
+const products = [
+  { id:1, name:"Tênis AeroFlex", price:249.90, img:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200&q=80", desc:"Sola leve e respirável.", buyLink:"https://seulink.com/checkout?id=1" },
+  { id:2, name:"Jaqueta NovaEra", price:399.00, img:"https://images.unsplash.com/photo-1520975698513-4a8e5d8c6f73?w=1200&q=80", desc:"Impermeável, corte moderno.", buyLink:"https://seulink.com/checkout?id=2" },
+  { id:3, name:"Mochila Urban", price:129.99, img:"https://images.unsplash.com/photo-1519744792095-2f2205e87b6f?w=1200&q=80", desc:"Compartimento para laptop.", buyLink:"https://seulink.com/checkout?id=3" },
+  { id:4, name:"Relógio Minimal", price:899.00, img:"https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=1200&q=80", desc:"Pulseira de couro.", buyLink:"https://seulink.com/checkout?id=4" },
+  { id:5, name:"Camiseta Essential", price:79.90, img:"https://images.unsplash.com/photo-1520975911588-1b5b0efb5a83?w=1200&q=80", desc:"Algodão macio.", buyLink:"https://seulink.com/checkout?id=5" },
+  { id:6, name:"Óculos Solar", price:219.00, img:"https://images.unsplash.com/photo-1518546305926-2b8f5f9b4b07?w=1200&q=80", desc:"Proteção UV400.", buyLink:"https://seulink.com/checkout?id=6" }
+];
+
+const CART_KEY = 'estudioshop_cart_v1';
+const CUST_KEY = 'estudioshop_customer_v1';
+
+function loadCart(){ try{ return JSON.parse(localStorage.getItem(CART_KEY)) || []; }catch(e){return []} }
+function saveCart(cart){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); renderCart(); }
+
+function loadCustomer(){ try{ return JSON.parse(localStorage.getItem(CUST_KEY)) || null; } catch(e){ return null; } }
+function saveCustomer(c){ localStorage.setItem(CUST_KEY, JSON.stringify(c)); }
+
+/* ======= UI REFERENCES ======= */
+const grid = document.getElementById('grid');
+const showing = document.getElementById('showing');
+const drawer = document.getElementById('drawer');
+const cartList = document.getElementById('cartList');
+const subtotalEl = document.getElementById('subtotal');
+const cartBtn = document.getElementById('cartBtn');
+const checkoutBtn = document.getElementById('checkoutBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+const custModal = document.getElementById('custModal');
+const custForm = document.getElementById('custForm');
+const closeCust = document.getElementById('closeCust');
+const custError = document.getElementById('custError');
+const useSavedBtn = document.getElementById('useSaved');
+const lookupCepBtn = document.getElementById('lookupCepBtn');
+
+const payModal = document.getElementById('payModal');
+const payContent = document.getElementById('payContent');
+const pixPayloadBlock = document.getElementById('pixPayloadBlock');
+const qrBlock = document.getElementById('qrBlock');
+const closePay = document.getElementById('closePay');
+
+/* ======= RENDER PRODUCTS ======= */
+function formatPrice(v){ return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+
+function renderProducts(list){
+  grid.innerHTML = '';
+  list.forEach(p=>{
+    const card = document.createElement('article'); card.className='card';
+    card.innerHTML = `
+      <div class="media"><img src="${p.img}" alt="${p.name}"></div>
+      <div class="meta">
+        <h3>${p.name}</h3>
+        <div class="muted">${p.desc}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+          <div class="price">${formatPrice(p.price)}</div>
+        </div>
+        <div class="actions">
+          <button class="btn primary addBtn" data-id="${p.id}">Adicionar</button>
+          <a href="${p.buyLink || '#'}" class="buy-link cta" target="_blank" rel="noopener">Comprar</a>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+  showing.innerText = `Mostrando ${list.length} itens`;
+  document.querySelectorAll('.addBtn').forEach(b=>b.addEventListener('click', ()=> addToCart(parseInt(b.dataset.id,10))) );
+}
+
+/* ======= CART FUNCTIONS ======= */
+function findProduct(id){ return products.find(p=>p.id===id) }
+function addToCart(id, qty=1){
+  const cart = loadCart();
+  const found = cart.find(i=>i.id===id);
+  if(found) found.qty += qty; else cart.push({ id, qty });
+  saveCart(cart); showToast('Item adicionado ao carrinho');
+}
+function setQty(id, qty){
+  let cart = loadCart().map(i=> i.id===id ? ({...i, qty: Math.max(0, qty)}) : i).filter(i=>i.qty>0);
+  saveCart(cart);
+}
+function removeFromCart(id){
+  let cart = loadCart().filter(i=>i.id!==id);
+  saveCart(cart);
+}
+function clearCart(){ localStorage.removeItem(CART_KEY); renderCart(); showToast('Carrinho limpo'); }
+
+/* ======= DRAWER UI ======= */
+cartBtn.addEventListener('click', ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); renderCart(); });
+function closeDrawer(){ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); }
+clearBtn.addEventListener('click', clearCart);
+
+/* ======= RENDER CART ======= */
+function renderCart(){
+  const cart = loadCart();
+  cartList.innerHTML = '';
+  if(cart.length===0){ cartList.innerHTML = '<div class="muted">Seu carrinho está vazio.</div>'; subtotalEl.innerText = formatPrice(0); return; }
+  let subtotal = 0;
+  cart.forEach(it=>{
+    const p = findProduct(it.id);
+    const line = document.createElement('div'); line.className='cart-item';
+    line.innerHTML = `
+      <img src="${p.img}" alt="${p.name}">
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700">${p.name}</div>
+            <div class="muted">${formatPrice(p.price)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700">${formatPrice(p.price * it.qty)}</div>
+            <button data-remove="${p.id}" style="border:0;background:transparent;color:#ef4444;cursor:pointer;margin-top:8px">Remover</button>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+          <div class="qty">
+            <button data-decr="${p.id}">−</button>
+            <div style="min-width:34px;text-align:center">${it.qty}</div>
+            <button data-incr="${p.id}">+</button>
+          </div>
+        </div>
+      </div>
+    `;
+    cartList.appendChild(line);
+    subtotal += p.price * it.qty;
+  });
+
+  // eventos
+  cartList.querySelectorAll('[data-incr]').forEach(b=>b.addEventListener('click', ()=>{
+    const id = parseInt(b.getAttribute('data-incr'),10);
+    const c = loadCart(); const it = c.find(x=>x.id===id); if(it){ it.qty++; saveCart(c); }
+  }));
+  cartList.querySelectorAll('[data-decr]').forEach(b=>b.addEventListener('click', ()=>{
+    const id = parseInt(b.getAttribute('data-decr'),10);
+    const c = loadCart(); const it = c.find(x=>x.id===id); if(it){ it.qty = Math.max(0, it.qty-1); saveCart(c); }
+  }));
+  cartList.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click', ()=>{
+    const id = parseInt(b.getAttribute('data-remove'),10); removeFromCart(id);
+  }));
+
+  subtotalEl.innerText = formatPrice(subtotal);
+}
+
+/* ======= SEARCH ======= */
+document.getElementById('search').addEventListener('input', (e)=>{
+  const q = e.target.value.toLowerCase().trim();
+  renderProducts(products.filter(p=> p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)));
+});
+
+/* ======= TOAST ======= */
+function showToast(text){
+  const t = document.createElement('div'); t.className='toast'; t.innerText=text; document.body.appendChild(t);
+  setTimeout(()=>t.remove(),1600);
+}
+
+/* ======= CEP (ViaCEP) HELPERS & VALIDATION ======= */
+function cleanCep(raw){ return (raw || '').replace(/\D/g,''); }
+function isValidCep(cep){ return /^[0-9]{8}$/.test(cep); }
+
+async function lookupCep(cepRaw){
+  const cep = cleanCep(cepRaw);
+  if(!isValidCep(cep)){
+    throw new Error('CEP inválido. Digite 8 dígitos.');
+  }
+  const url = `https://viacep.com.br/ws/${cep}/json/`;
+  const resp = await fetch(url);
+  if(!resp.ok) throw new Error('Falha ao consultar ViaCEP');
+  const data = await resp.json();
+  if(data.erro) throw new Error('CEP não encontrado');
+  // data: { cep, logradouro, bairro, localidade, uf, ... }
+  return data;
+}
+
+/* ======= CUSTOMER FORM HANDLING ======= */
+function openCustomerModal(){
+  // populate if saved
+  const saved = loadCustomer();
+  if(saved){
+    Object.keys(saved).forEach(k => {
+      const el = document.getElementById('c_' + k);
+      if(el) el.value = saved[k] || '';
+    });
+  }
+  custError.style.display = 'none';
+  custModal.classList.add('open');
+}
+function closeCustomerModal(){ custModal.classList.remove('open'); }
+
+closeCust.addEventListener('click', closeCustomerModal);
+useSavedBtn.addEventListener('click', ()=>{
+  const saved = loadCustomer();
+  if(!saved){ showToast('Nenhum dado salvo'); return; }
+  createTransactionAndPay(saved);
+  closeCustomerModal();
+});
+
+lookupCepBtn.addEventListener('click', async ()=>{
+  const cepInput = document.getElementById('c_cep');
+  const cepRaw = cepInput.value || '';
+  try {
+    lookupCepBtn.disabled = true;
+    lookupCepBtn.innerText = 'Buscando...';
+    const data = await lookupCep(cepRaw);
+    // fill fields
+    document.getElementById('c_address').value = data.logradouro || '';
+    document.getElementById('c_city').value = data.localidade || '';
+    document.getElementById('c_state').value = data.uf || '';
+    custError.style.display = 'none';
+    showToast('Endereço preenchido pelo CEP');
+  } catch (err) {
+    custError.innerText = err.message || 'Erro procurando CEP';
+    custError.style.display = 'block';
+  } finally {
+    lookupCepBtn.disabled = false;
+    lookupCepBtn.innerText = 'Pesquisar CEP';
+  }
+});
+
+// auto lookup on blur of CEP
+document.getElementById('c_cep').addEventListener('blur', async (e) => {
+  const cepRaw = e.target.value || '';
+  if(!cepRaw) return;
+  try {
+    const data = await lookupCep(cepRaw);
+    document.getElementById('c_address').value = data.logradouro || '';
+    document.getElementById('c_city').value = data.localidade || '';
+    document.getElementById('c_state').value = data.uf || '';
+    custError.style.display = 'none';
+  } catch (err) {
+    // if invalid format, ignore silently (user may still be typing)
+    const cleaned = cleanCep(cepRaw);
+    if(cleaned.length === 8){
+      custError.innerText = err.message || 'CEP inválido';
+      custError.style.display = 'block';
+    } else {
+      // clear any previous CEP errors
+      custError.style.display = 'none';
+    }
+  }
+});
+
+/* basic validators */
+function isValidEmail(e){ return !e || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function isValidPhone(p){ if(!p) return false; const digits = p.replace(/\D/g,''); return digits.length >= 10; }
+function isValidCPF(c){ if(!c) return true; const d = c.replace(/\D/g,''); return d.length === 11 || d.length === 14; }
+
+custForm.addEventListener('submit', (ev)=>{
+  ev.preventDefault();
+  custError.style.display = 'none';
+
+  // gather fields
+  const customer = {
+    name: document.getElementById('c_name').value.trim(),
+    email: document.getElementById('c_email').value.trim(),
+    phone: document.getElementById('c_phone').value.trim(),
+    document: document.getElementById('c_document').value.trim(),
+    cep: document.getElementById('c_cep').value.trim(),
+    city: document.getElementById('c_city').value.trim(),
+    state: document.getElementById('c_state').value.trim(),
+    address: document.getElementById('c_address').value.trim(),
+    number: document.getElementById('c_number').value.trim(),
+    complement: document.getElementById('c_complement').value.trim(),
+    note: document.getElementById('c_note').value.trim()
+  };
+
+  // validations
+  if(!customer.name){ custError.innerText = 'Nome é obrigatório.'; custError.style.display='block'; return; }
+  if(!isValidPhone(customer.phone)){ custError.innerText = 'Telefone inválido (mínimo 10 dígitos).'; custError.style.display='block'; return; }
+  if(!isValidEmail(customer.email)){ custError.innerText = 'Email inválido.'; custError.style.display='block'; return; }
+  if(!isValidCPF(customer.document)){ custError.innerText = 'CPF/CNPJ inválido (apenas números).'; custError.style.display='block'; return; }
+  // optional: require CEP if address provided
+  if(customer.address && !cleanCep(customer.cep)){ custError.innerText = 'Preencha o CEP correspondente ao endereço.'; custError.style.display='block'; return; }
+  // if CEP provided, validate format
+  if(customer.cep && !isValidCep(cleanCep(customer.cep))){ custError.innerText = 'CEP inválido (use 8 dígitos).'; custError.style.display='block'; return; }
+
+  // save customer locally for reuse
+  saveCustomer(customer);
+
+  // close modal and proceed to create transaction
+  custModal.classList.remove('open');
+  createTransactionAndPay(customer);
+});
+
+/* ======= CHECKOUT FLOW ======= */
+// create transaction on server
+async function createTransactionOnServer(payload){
+  const url = (FETCH_BASE || '') + '/create-transaction';
+  const resp = await fetch(url, {
+    method:'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  const data = await resp.json();
+  if(!resp.ok) throw data;
+  return data;
+}
+
+checkoutBtn.addEventListener('click', ()=> {
+  // open customer modal for full data capture
+  custError.style.display = 'none';
+  openCustomerModal();
+});
+
+async function createTransactionAndPay(customer){
+  const cart = loadCart();
+  if(!cart || cart.length === 0){ alert('Seu carrinho está vazio.'); return; }
+
+  // payload to server: cart + customer
+  const payload = {
+    cart: cart.map(i => ({ id: i.id, qty: i.qty })),
+    customer: customer
+  };
+
+  try {
+    checkoutBtn.disabled = true;
+    checkoutBtn.innerText = 'Criando transação...';
+    const result = await createTransactionOnServer(payload);
+    const sunize = result.sunize || result.data || result;
+    openPaymentModal(sunize);
+  } catch (err) {
+    console.error('Erro criando transação', err);
+    alert('Erro ao criar transação. Veja console.');
+  } finally {
+    checkoutBtn.disabled = false;
+    checkoutBtn.innerText = 'Ir para o checkout';
+  }
+}
+
+/* ======= PAYMENT MODAL ======= */
+closePay.addEventListener('click', ()=> { payModal.classList.remove('open'); });
+
+function openPaymentModal(sunize){
+  payContent.innerHTML = '';
+  pixPayloadBlock.innerHTML = '';
+  qrBlock.innerHTML = '';
+
+  let id = sunize.id || sunize.transaction_id || sunize.external_id || '';
+  let status = sunize.status || '—';
+  let total = sunize.total_amount !== undefined ? formatPrice(sunize.total_amount) : '';
+
+  let html = `<div><strong>ID transação:</strong> ${id}</div>`;
+  html += `<div><strong>Status:</strong> ${status}</div>`;
+  if(total) html += `<div style="margin-top:8px"><strong>Total:</strong> ${total}</div>`;
+  payContent.innerHTML = html;
+
+  const pixPayload = sunize.pix && (sunize.pix.payload || sunize.pix.qr_payload);
+  const pixQr = sunize.pix && (sunize.pix.qr_code || sunize.pix.qr);
+  if(pixPayload){
+    pixPayloadBlock.innerHTML = `<div><strong>PIX payload (copie e pague no seu app):</strong><pre>${pixPayload}</pre></div>`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(pixPayload)}`;
+    qrBlock.innerHTML = `<img src="${qrUrl}" alt="QR PIX" style="border-radius:8px">`;
+  } else if (pixQr){
+    qrBlock.innerHTML = `<img src="${pixQr}" alt="QR PIX" style="border-radius:8px">`;
+    pixPayloadBlock.innerHTML = `<div class="muted">Use o QR acima para pagar no seu app bancário.</div>`;
+  } else if (sunize.payment_url){
+    pixPayloadBlock.innerHTML = `<div>Abra o link de pagamento: <a href="${sunize.payment_url}" target="_blank" rel="noopener">${sunize.payment_url}</a></div>`;
+  } else {
+    pixPayloadBlock.innerHTML = `<div class="muted">Instruções de pagamento não retornadas pela API. Veja resposta completa abaixo:</div><pre>${JSON.stringify(sunize,null,2)}</pre>`;
+  }
+
+  payModal.classList.add('open');
+}
+
+/* ======= INIT ======= */
+renderProducts(products);
+document.getElementById('year').innerText = new Date().getFullYear();
+renderCart();
+
+/* Prefill customer if exists in localStorage */
+(function prefillCustomerInputs(){
+  const saved = loadCustomer();
+  if(!saved) return;
+  Object.keys(saved).forEach(k => {
+    const el = document.getElementById('c_' + k);
+    if(el) el.value = saved[k] || '';
+  });
+})();
+
+</script>
+</body>
+</html>
